@@ -80,6 +80,11 @@ sockets.on("connection",function(socket){
     socket.on("mensajes",function(clientedata){
         if(clientedata.nick===socket.nickname)
         {
+            sockets.sockets.emit("mensajes",clientedata);
+            var msn=clientedata.nick+">"clientedata.msn;
+            query.save("mensajes",{msn:clientedata.msn,idUs:socket.idus},function(r){
+                console.log(r);
+            })
             console.log(clientedata)
             var comando=clientedata.msn.split(" ");
             if(comando[0]=="join")
