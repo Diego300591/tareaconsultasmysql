@@ -9,11 +9,16 @@ var routes = require('./routes/index');
 var users = require('./routes/users');
 var io=require("socket.io");
 var app = express();
+
 var mysql=require("./db/mysql");
 var query=mysql({host:"localhost",user:"root",password:"",database:"chat"});
-/*query.get("usuario").where({nickname:"bebeto"}).execute(function(rows){
-    console.log(rows);
-});*/
+/*query.get("usuario").select(["nickname","id"]).limit(2).where({id:"1"}).execute(function(rows){
+    rows[0].all(rows[0].mensaje_table);
+    rows[0].all(rows[0].sala_table,function(r){
+        console.log(rows[0].sala);
+    }); 
+});
+*/
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -63,7 +68,7 @@ app.use(function(err, req, res, next) {
 
 
 module.exports = app;
-var PORT=3001;
+var PORT=3000;
 var server=app.listen(PORT,function(){
     console.log("Servidor corriendo en "+PORT);
 })
@@ -86,7 +91,10 @@ sockets.on("connection",function(socket){
                 socket.join(sala);
                 return;
             }
-            /*query.save("mensaje",{mensaje:clientedata.msn,idUs:socket})*/
+            
+            query.save("mensaje",{mensaje:clientedata.msn,idUs:socket.idUs,idSa:socket.idSala},function(r){
+                console.log(r);
+            });
             sockets.to(socket.salas).emit("mensajes",clientedata);
             
             
@@ -102,18 +110,36 @@ sockets.on("connection",function(socket){
         if(verificarCuenta(clientedata.nick,socket)){
             nicknames.push(clientedata);
             //seteamos el nick en el mismo socket del cliente
-            crearSalaDb("general",socket,function(){
+            
+            /*crearSalaDb("seminario",socket,function(){
                 socket.nickname=clientedata.nick;
                 socket.salas="general";
                 socket.join("general");
-                socket.emit("setnickname",{"server":true})
-            });
+                socket.emit("setnickname",{"server":true});
+            });*/
+
+            
             return;
         }
         socket.emit("setnickname",{"server":"El nick no esta disponible"});
         return;
     });
 });
+/*var crearSalaDb=function(nombre_sala,socket,callback)
+{
+    query.get("sala").where({nombre:nombre_sala}).execute(function(rows){
+        if(rows==0)
+        {
+            query.save("sala",{nombre:nombre_sala,idUs:socket.idUs},function(r){
+                socket.idSala=r.inserId;
+                callback();
+            })
+        }else{
+            socket.idSala=rows[0].id;
+            callback();
+        }
+    });
+}*/
 var verificarCuenta=function(ins,socket)
 {
     query.get("usuario").where({nickname:ins}).execute(function(rows){
@@ -123,13 +149,12 @@ var verificarCuenta=function(ins,socket)
                 console.log(response);
                 socket.idUs=response.insertId;
                 //nicknames.push(rows[0].nickname)
-        });
+            });
         }else{
             console.log(rows);
             socket.idUs=rows[0].id;
             nicknames.push(rows[0].nickname);
         }
-        return true;
     });
-    return
+    return true; 
 }
