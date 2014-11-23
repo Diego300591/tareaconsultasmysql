@@ -81,10 +81,10 @@ sockets.on("connection",function(socket){
         if(clientedata.nick===socket.nickname)
         {
             sockets.sockets.emit("mensajes",clientedata);
-            var msn=clientedata.nick+">"clientedata.msn;
-            query.save("mensajes",{msn:clientedata.msn,idUs:socket.idus},function(r){
+            /*var msn=clientedata.nick+">"clientedata.msn;*/
+            /*query.save("mensajes",{msn:clientedata.msn,idUs:socket.idus},function(r){
                 console.log(r);
-            })
+            })*/
             console.log(clientedata)
             var comando=clientedata.msn.split(" ");
             if(comando[0]=="join")
@@ -97,10 +97,10 @@ sockets.on("connection",function(socket){
                 return;
             }
             
-            query.save("mensaje",{mensaje:clientedata.msn,idUs:socket.idUs,idSa:socket.idSala},function(r){
+            /*query.save("mensaje",{mensaje:clientedata.msn,idUs:socket.idUs,idSa:socket.idSala},function(r){
                 console.log(r);
-            });
-            sockets.to(socket.salas).emit("mensajes",clientedata);
+            });*/
+            /*sockets.to(socket.salas).emit("mensajes",clientedata)*/;
             
             
             return;    
@@ -114,6 +114,12 @@ sockets.on("connection",function(socket){
     socket.on("setnickname",function(clientedata){
         if(verificarCuenta(clientedata.nick,socket)){
             nicknames.push(clientedata);
+            socket.nickname=clientedata.nick;
+            socket.emit("setnickname",{"server":true})
+            query.get("mensajes").orderby("-id").execute(function(rows){
+                socket.emit("getMensajes",{"msn":rows});
+
+            });
             //seteamos el nick en el mismo socket del cliente
             
             /*crearSalaDb("seminario",socket,function(){
